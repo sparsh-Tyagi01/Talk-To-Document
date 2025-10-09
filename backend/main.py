@@ -166,3 +166,46 @@
 #     import uvicorn
 #     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
 
+from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+import os
+from dotenv import load_dotenv
+import shutil
+
+load_dotenv()
+
+app = FastAPI(title="Talk To Document backend")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=['*'],
+    allow_methods=['*'],
+    allow_headers=['*']
+)
+
+upload_dir = "./uploads"
+os.makedirs(upload_dir, exist_ok=True)
+    
+
+@app.post('/uploads')
+def upload_file(file: UploadFile = File(...)):
+    allowed = (".pdf", ".docx", ".txt")
+    if not any(file.filename.endswith(ext) for ext in allowed):
+        raise HTTPException(status_code=400, detail="Only .pdf, .docx, .txt are allowed")
+
+    file_path = os.path.join(upload_dir, file.filename.lower())
+
+    with open(file_path, 'wb') as buffer:
+        shutil.copyfileobj(file.file,buffer)
+    
+    file_size = os.path.getsize(file_path)
+    file_ext = os.path.splitext(file.filename)[1]
+
+    return {
+        "filename": file.filename,
+        "path": file_path,
+        "extension": file_ext,
+        "size_bytes": file_size,
+        "status": "File uploaded successfully!"
+    }
