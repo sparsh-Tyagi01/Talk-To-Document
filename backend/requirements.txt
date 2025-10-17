@@ -1,11 +1,15 @@
 fastapi
 uvicorn[standard]
-aiofiles
 python-multipart
 pypdf
 python-docx
-chromadb
-sentence-transformers
-torch
-transformers
-tqdm
+langchain
+langchain-community
+langchain-chroma
+langchain-google-genai
+# aiofiles
+# chromadb
+# sentence-transformers
+# torch
+# transformers
+# tqdm
