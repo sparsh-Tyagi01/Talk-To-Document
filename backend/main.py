@@ -1,5 +1,6 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import os
 from dotenv import load_dotenv
@@ -74,7 +75,7 @@ def generate_chunks(user_input):
     content = "/n---/n".join([doc.page_content for doc in relevent_docs])
     return content
 
-@app.post('/uploads')
+@app.post('/api/uploads')
 def upload_file(file: UploadFile = File(...)):
     allowed = (".pdf", ".docx", ".txt")
     if not any(file.filename.endswith(ext) for ext in allowed):
@@ -103,7 +104,7 @@ def upload_file(file: UploadFile = File(...)):
 
     return {"status": "success", "title": file.filename, "num_chunks": len(chunks)}
 
-@app.post('/chat')
+@app.post('/api/chat')
 def ask_query(req:Question):
     user_input = req.user_input
     context = generate_chunks(user_input)
@@ -127,9 +128,9 @@ def ask_query(req:Question):
     response = chain.invoke({"context": context, "question": user_input})
 
     final_answer = response.content
-    return {"answer": final_answer}
+    return {final_answer}
 
-@app.post("/delete")
+@app.delete("/api/delete/{filename}")
 def delete_file(filename:str):
     file_path = os.path.join(upload_dir, filename)
 
@@ -143,3 +144,15 @@ def delete_file(filename:str):
         shutil.rmtree(persist_directory)
     
     return {"message": "Deleted successfully"}
+
+@app.get("/api/files")
+def getFiles():
+    files = os.listdir(upload_dir)
+    return {"files":files}
+
+@app.get("/api/files/{filename}")
+def openFile(filename:str):
+    file_path = os.path.join(upload_dir, filename)
+    if not os.path.exists(file_path):
+        return {"error": "file not found"}
+    return FileResponse(file_path)
